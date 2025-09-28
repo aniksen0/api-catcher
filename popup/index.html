@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>API Catcher</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-gray-900 text-white font-sans p-3 w-96">
+  <h1 class="text-xl font-bold mb-3">API Catcher</h1>
+
+  <div class="flex gap-2 mb-3">
+    <button id="showAll" class="bg-blue-600 px-3 py-1 rounded">All</button>
+    <button id="showUnique" class="bg-green-600 px-3 py-1 rounded">Unique</button>
+    <button id="clearBtn" class="bg-red-600 px-3 py-1 rounded">Clear</button>
+    <button id="clearFolder" class="bg-red-600 px-3 py-1 rounded">Delete Folders</button>
+  </div>
+
+  <p class="text-white" id="count"></p>
+
+  <input id="searchBox" type="text" placeholder="Search APIs..."
+    class="w-full p-2 mb-3 rounded text-black" />
+
+  <!-- 🔹 Folder Controls -->
+  <div class="mb-3">
+    <button id="createFolderBtn" class="bg-yellow-600 px-3 py-1 rounded w-full">+ Create Folder</button>
+    <div id="folders" class="mt-2 space-y-2"></div>
+  </div>
+
+  <!-- 🔹 Export Controls -->
+  <div class="mb-3">
+    <button id="exportAllBtn" class="bg-purple-600 px-3 py-1 rounded w-full">Export All (Postman)</button>
+    <button id="exportFilteredBtn" class="bg-indigo-600 px-3 py-1 rounded w-full mt-1">Export Filtered (Postman)</button>
+  </div>
+
+  <div id="apiList" class="max-h-80 overflow-y-auto space-y-2"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
