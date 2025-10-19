@@ -1,4 +1,5 @@
-let apiCalls = [];
+const apiCalls = [];
+
 function notifyTabs(apiData) {
   chrome.tabs.query({}, (tabs) => {
     tabs.forEach((tab) => {
@@ -34,7 +35,12 @@ chrome.webRequest.onBeforeRequest.addListener(
       responseHeaders: null,
       statusCode: null,
     };
-
+    if (
+      details.url.startsWith("chrome-extension") ||
+      details.url.includes("cdn")
+    ) {
+      return;
+    }
     apiCalls.unshift(apiData); // newest first
     notifyTabs(apiData);
   },
