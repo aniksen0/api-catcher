@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let filter = "all";
   let folders = {};
 
-  // 🔹 Save/load folders in chrome storage
+  // Save/load folders in chrome storage
   function saveFolders() {
     chrome.storage.local.set({ folders });
   }
@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 🔹 Render API list
+  // Render API list
   function render() {
     apiList.innerHTML = "";
 
@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 🔹 Render Folders
+  // Render Folders
   function renderFolders() {
     foldersDiv.innerHTML = "";
     Object.keys(folders).forEach((folderName) => {
@@ -98,7 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 🔹 Folder Selection Popup
+  // Folder Selection Popup
   function showFolderSelection(api) {
     const folderNames = Object.keys(folders);
     if (folderNames.length === 0) {
@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 🔹 Details view
+  // Details view
   function showDetails(api) {
     apiList.innerHTML = `
       <div class="p-3 bg-gray-900 rounded text-sm">
@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("backBtn").addEventListener("click", render);
   }
 
-  // 🔹 Export to Postman
+  // Export to Postman
   function exportToPostman(requests, collectionName = "API Catcher Export") {
     const postmanCollection = {
       info: {
@@ -185,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
     a.click();
   }
 
-  // 🔹 Load APIs
+  // Load APIs
   function loadApis() {
     chrome.runtime.sendMessage({ action: "getApiCalls" }, (res) => {
       apis = res || [];
