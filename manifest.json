@@ -3,7 +3,7 @@
   "name": "API Catcher",
   "description": "Capture and organize API calls made by websites",
   "version": "1.0",
-  "permissions": ["webRequest", "storage", "tabs"],
+  "permissions": ["webRequest", "storage", "tabs","scripting","activeTab"],
   "host_permissions": ["<all_urls>"],
   "background": { "service_worker": "background.js" },
   "action": {
