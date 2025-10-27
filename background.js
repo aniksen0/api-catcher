@@ -1,4 +1,17 @@
-const apiCalls = [];
+let apiCalls = [];
+
+function saveApiCalls() {
+  try {
+    chrome.storage.local.set({ apiCalls });
+  } catch (e) {
+    // ignore storage errors
+  }
+}
+
+// Load previously saved API calls (if any) so data survives service worker restarts
+chrome.storage.local.get({ apiCalls: [] }, (res) => {
+  apiCalls = res.apiCalls || [];
+});
 
 function notifyTabs(apiData) {
   chrome.tabs.query({}, (tabs) => {
@@ -42,6 +55,7 @@ chrome.webRequest.onBeforeRequest.addListener(
       return;
     }
     apiCalls.unshift(apiData); // newest first
+    saveApiCalls();
     notifyTabs(apiData);
   },
   { urls: ["<all_urls>"] },
@@ -54,6 +68,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
     const api = apiCalls.find((a) => a.requestId === details.requestId);
     if (api) {
       api.requestHeaders = details.requestHeaders || [];
+      saveApiCalls();
     }
   },
   { urls: ["<all_urls>"] },
@@ -67,6 +82,7 @@ chrome.webRequest.onCompleted.addListener(
     if (api) {
       api.statusCode = details.statusCode;
       api.responseHeaders = details.responseHeaders || [];
+      saveApiCalls();
     }
   },
   { urls: ["<all_urls>"] },
@@ -80,6 +96,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   if (message.action === "clearApiCalls") {
     apiCalls = [];
-    sendResponse([]);
+    // persist cleared state then respond
+    chrome.storage.local.set({ apiCalls: [] }, () => {
+      sendResponse([]);
+    });
+    return true; // keep the message channel open for async response
   }
 });

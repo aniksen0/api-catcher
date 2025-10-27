@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let apis = [];
   let filter = "all";
   let folders = {};
+  let currentFolder = null; // when set, render only items in this folder
 
   // Save/load folders in chrome storage
   function saveFolders() {
@@ -14,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function clearFolders() {
     folders = {};
     chrome.storage.local.remove("folders");
+    currentFolder = null;
   }
 
   function loadFolders(cb) {
@@ -27,10 +29,19 @@ document.addEventListener("DOMContentLoaded", () => {
   function render() {
     apiList.innerHTML = "";
 
-    let filtered = apis;
+    // Determine which set of APIs to show: folder view or main view (excluding moved)
+    let items = [];
+    if (currentFolder) {
+      const ids = folders[currentFolder] || [];
+      items = apis.filter((api) => ids.includes(api.requestId));
+    } else {
+      items = apis.filter((api) => !api.movedTo);
+    }
+
+    let filtered = items;
 
     if (filter === "unique") {
-      filtered = apis.filter(
+      filtered = filtered.filter(
         (api, idx, self) => idx === self.findIndex((a) => a.url === api.url)
       );
     }
@@ -42,11 +53,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const countEl = document.getElementById("count");
-    countEl.textContent = `Total APIs: ${filtered.length}`;
+    if (currentFolder) {
+      countEl.textContent = `Folder: ${currentFolder} — ${filtered.length} APIs`;
+    } else {
+      countEl.textContent = `Total APIs: ${filtered.length}`;
+    }
 
     if (filtered.length === 0) {
       apiList.innerHTML = `<p>No API calls found</p>`;
       return;
+    }
+
+    // If we're in a folder view, show a back button to return to the folders/main list
+    if (currentFolder) {
+      const header = document.createElement("div");
+      header.className = "mb-2";
+      header.innerHTML = `<button id="backToFolders" class="bg-blue-600 px-2 py-1 rounded">← Back to Folders</button>`;
+      header.querySelector("#backToFolders").addEventListener("click", () => {
+        currentFolder = null;
+        render();
+      });
+      apiList.appendChild(header);
     }
 
     filtered.forEach((api) => {
@@ -84,7 +111,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       div.innerHTML = `
         <p class="font-bold">${folderName} (${folders[folderName].length})</p>
-        <button class="bg-purple-600 px-2 py-1 text-xs rounded mt-1 export-folder">Export</button>
+        <div class="mt-1 flex gap-2">
+          <button class="bg-blue-600 px-2 py-1 text-xs rounded view-folder">View</button>
+          <button class="bg-purple-600 px-2 py-1 text-xs rounded export-folder">Export</button>
+        </div>
       `;
 
       div.querySelector(".export-folder").addEventListener("click", () => {
@@ -92,6 +122,11 @@ document.addEventListener("DOMContentLoaded", () => {
           folders[folderName].includes(api.requestId)
         );
         exportToPostman(requests, folderName);
+      });
+
+      div.querySelector(".view-folder").addEventListener("click", () => {
+        currentFolder = folderName;
+        render();
       });
 
       foldersDiv.appendChild(div);
@@ -106,15 +141,45 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const choice = prompt("Enter folder name:\n" + folderNames.join("\n"));
+    // Create a simple modal in the popup to choose a folder
+    const modal = document.createElement("div");
+    modal.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3";
+    modal.style.zIndex = 9999;
 
-    if (choice && folders[choice]) {
-      if (!folders[choice].includes(api.requestId)) {
-        folders[choice].push(api.requestId);
-        saveFolders();
-        renderFolders();
-      }
-    }
+    const box = document.createElement("div");
+    box.className = "bg-gray-900 p-3 rounded w-full";
+    box.innerHTML = `<h3 class="font-bold mb-2">Move request to folder</h3>`;
+
+    const list = document.createElement("div");
+    list.className = "space-y-2";
+
+    folderNames.forEach((fname) => {
+      const btn = document.createElement("button");
+      btn.className = "w-full text-left bg-gray-800 px-2 py-1 rounded";
+      btn.textContent = `${fname} (${folders[fname].length})`;
+      btn.addEventListener("click", () => {
+        if (!folders[fname].includes(api.requestId)) {
+          folders[fname].push(api.requestId);
+          // mark the api as moved so it is removed from the main list
+          api.movedTo = fname;
+          saveFolders();
+          renderFolders();
+          render();
+        }
+        modal.remove();
+      });
+      list.appendChild(btn);
+    });
+
+    const cancel = document.createElement("button");
+    cancel.className = "mt-2 w-full bg-red-600 px-2 py-1 rounded";
+    cancel.textContent = "Cancel";
+    cancel.addEventListener("click", () => modal.remove());
+
+    box.appendChild(list);
+    box.appendChild(cancel);
+    modal.appendChild(box);
+    document.body.appendChild(modal);
   }
 
   // Details view
@@ -232,9 +297,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("exportFilteredBtn").addEventListener("click", () => {
-    let filtered = apis;
+    // Export the same list that is visible in the main view (exclude moved items)
+    let filtered = apis.filter((api) => !api.movedTo);
     if (filter === "unique") {
-      filtered = apis.filter(
+      filtered = filtered.filter(
         (api, idx, self) => idx === self.findIndex((a) => a.url === api.url)
       );
     }
