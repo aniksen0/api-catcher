@@ -254,10 +254,40 @@ document.addEventListener("DOMContentLoaded", () => {
   function loadApis() {
     chrome.runtime.sendMessage({ action: "getApiCalls" }, (res) => {
       apis = res || [];
+      // Ensure movedTo flags match stored folders
+      Object.keys(folders).forEach((fname) => {
+        (folders[fname] || []).forEach((id) => {
+          const a = apis.find((x) => x.requestId === id);
+          if (a) a.movedTo = fname;
+        });
+      });
       render();
       renderFolders();
     });
   }
+
+  // Capture toggle UI
+  const toggleCaptureBtn = document.getElementById("toggleCaptureBtn");
+  function updateToggleLabel(enabled) {
+    toggleCaptureBtn.textContent = enabled ? "Pause Capture" : "Start Capture";
+    toggleCaptureBtn.className = enabled ? "bg-yellow-500 px-3 py-1 rounded" : "bg-green-600 px-3 py-1 rounded";
+  }
+
+  // Query background for current capture state
+  chrome.runtime.sendMessage({ action: "getCaptureState" }, (res) => {
+    updateToggleLabel(res && res.enabled);
+  });
+
+  toggleCaptureBtn.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ action: "getCaptureState" }, (res) => {
+      const enabled = res && res.enabled;
+      if (enabled) {
+        chrome.runtime.sendMessage({ action: "stopCapture" }, (r) => updateToggleLabel(!r.enabled));
+      } else {
+        chrome.runtime.sendMessage({ action: "startCapture" }, (r) => updateToggleLabel(!!r.enabled));
+      }
+    });
+  });
 
   // Events
   document.getElementById("showAll").addEventListener("click", () => {
